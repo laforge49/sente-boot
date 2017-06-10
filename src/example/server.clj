@@ -91,7 +91,7 @@
     [:hr]
     [:h2 "Step 4: want to re-randomize Ajax/WebSocket connection type?"]
     [:p "Hit your browser's reload/refresh button"]
-    [:script {:src "main.js"}] ; Include our cljs target
+    [:script {:src "app.js"}] ; Include our cljs target
     ))
 
 (defn login-handler
@@ -204,7 +204,7 @@
 (defn  stop-web-server! [] (when-let [stop-fn @web-server_] (stop-fn)))
 (defn start-web-server! [& [port]]
   (stop-web-server!)
-  (let [port (or port 3000) ; 0 => Choose any available port
+  (let [port (or port 0) ; 0 => Choose any available port
         ring-handler (var main-ring-handler)
 
         [port stop-fn]
