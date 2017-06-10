@@ -28,7 +28,7 @@
 (require
  '[adzerk.boot-cljs      :refer [cljs]]
  '[adzerk.boot-reload    :refer [reload]]
- 'example.my-app)
+ 'example.server)
 
 (deftask dev
   "Run a restartable system in the Repl"
@@ -39,7 +39,7 @@
    (reload)
    (repl 
     :server true 
-    :init-ns 'example.my-app)))
+    :init-ns 'example.server)))
 
 (deftask repl-client
  []
