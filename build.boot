@@ -1,27 +1,29 @@
 (set-env!
- :source-paths   #{"src/clj" "src/cljs"}
- :dependencies '[[adzerk/boot-cljs      "2.0.0" :scope "test"]
+ :source-paths   #{"src"}
+ :dependencies '[
+                 [org.clojure/clojure                       "1.9.0-alpha14"  :scope "provided"]
+                 [org.clojure/core.async                    "0.2.395"]
+                 [org.clojure/clojurescript "1.9.473"]
+                 [adzerk/boot-cljs      "2.0.0" :scope "test"]
                  [adzerk/boot-reload    "0.5.1"      :scope "test"]
-                 [org.clojure/clojure       "1.7.0-RC1"]
-                 [org.clojure/tools.nrepl "0.2.10"]
-           
-                 [org.clojure/core.async "0.1.346.0-17112a-alpha"]
-                 [com.taoensso/sente        "1.5.0-RC2"] ; <--- Sente
+                 [org.clojure/tools.nrepl "0.2.12"]
+                 [com.taoensso/sente        "1.11.0"] ; <--- Sente
+                 [com.taoensso/timbre       "4.7.4"]
 
    ;;; ---> Choose (uncomment) a supported web server <---
-                 [http-kit                  "2.1.19"]
+                 [http-kit                  "2.2.0"]
                  ;; [org.immutant/web       "2.0.0-beta2"]
 
-                 [ring                      "1.4.0-RC1"]
-                 [ring/ring-defaults        "0.1.5"] ; Includes `ring-anti-forgery`, etc.
+                 [ring                      "1.6.1"]
+                 [ring/ring-defaults        "0.3.0"] ; Includes `ring-anti-forgery`, etc.
 
-                 [compojure                 "1.3.4"] ; Or routing lib of your choice
+                 [compojure                 "1.6.0"] ; Or routing lib of your choice
                  [hiccup                    "1.0.5"] ; Optional, just for HTML
 
    ;;; Transit deps optional; may be used to aid perf. of larger data payloads
    ;;; (see reference example for details):
-                 [com.cognitect/transit-clj  "0.8.275"]
-                 [com.cognitect/transit-cljs "0.8.220"]])
+                 [com.cognitect/transit-clj  "0.8.290"]
+                 [com.cognitect/transit-cljs "0.8.239"]])
 
 (require
  '[adzerk.boot-cljs      :refer [cljs]]
