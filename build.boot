@@ -1,5 +1,6 @@
 (set-env!
  :source-paths   #{"src"}
+ :resource-paths #{"resources"}
  :dependencies '[
                  [org.clojure/clojure                       "1.9.0-alpha14"  :scope "provided"]
                  [org.clojure/core.async                    "0.2.395"]
@@ -30,6 +31,10 @@
  '[adzerk.boot-reload    :refer [reload]]
  'example.server)
 
+(deftask run []
+  (with-pass-thru _
+    (example.server/-main)))
+
 (deftask dev
   "Run a restartable system in the Repl"
   []
@@ -37,11 +42,4 @@
    (watch)
    (cljs :source-map true)
    (reload)
-   (repl 
-    :server true 
-    :init-ns 'example.server)))
-
-(deftask repl-client
- []
- (comp
-  (repl :client true)))
+   (run)))
