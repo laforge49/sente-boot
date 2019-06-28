@@ -3,45 +3,46 @@
   {:author "Peter Taoussanis (@ptaoussanis)"}
 
   (:require
-   [clojure.string     :as str]
-   [ring.middleware.defaults]
-   [compojure.core     :as comp :refer (defroutes GET POST)]
-   [compojure.route    :as route]
-   [hiccup.core        :as hiccup]
-   [clojure.core.async :as async  :refer (<! <!! >! >!! put! chan go go-loop)]
-   [taoensso.encore    :as encore :refer (have have?)]
-   [taoensso.timbre    :as timbre :refer (tracef debugf infof warnf errorf)]
-   [taoensso.sente     :as sente]
+    [clojure.string     :as str]
+    [ring.middleware.defaults]
+    [ring.middleware.anti-forgery :as anti-forgery]
+    [compojure.core     :as comp :refer (defroutes GET POST)]
+    [compojure.route    :as route]
+    [hiccup.core        :as hiccup]
+    [clojure.core.async :as async  :refer (<! <!! >! >!! put! chan go go-loop)]
+    [taoensso.encore    :as encore :refer (have have?)]
+    [taoensso.timbre    :as timbre :refer (tracef debugf infof warnf errorf)]
+    [taoensso.sente     :as sente]
 
-   ;;; TODO Choose (uncomment) a supported web server + adapter -------------
-   [org.httpkit.server :as http-kit]
-   [taoensso.sente.server-adapters.http-kit :refer (get-sch-adapter)]
-   ;;
-   ;; [immutant.web :as immutant]
-   ;; [taoensso.sente.server-adapters.immutant :refer (get-sch-adapter)]
-   ;;
-   ;; [nginx.clojure.embed :as nginx-clojure]
-   ;; [taoensso.sente.server-adapters.nginx-clojure :refer (get-sch-adapter)]
-   ;;
-   ;; [aleph.http :as aleph]
-   ;; [taoensso.sente.server-adapters.aleph :refer (get-sch-adapter)]
-   ;; -----------------------------------------------------------------------
+    ;;; TODO Choose (uncomment) a supported web server + adapter -------------
+    [org.httpkit.server :as http-kit]
+    [taoensso.sente.server-adapters.http-kit :refer (get-sch-adapter)]
+    ;;
+    ;; [immutant.web :as immutant]
+    ;; [taoensso.sente.server-adapters.immutant :refer (get-sch-adapter)]
+    ;;
+    ;; [nginx.clojure.embed :as nginx-clojure]
+    ;; [taoensso.sente.server-adapters.nginx-clojure :refer (get-sch-adapter)]
+    ;;
+    ;; [aleph.http :as aleph]
+    ;; [taoensso.sente.server-adapters.aleph :refer (get-sch-adapter)]
+    ;; -----------------------------------------------------------------------
 
-   ;; Optional, for Transit encoding:
-   [taoensso.sente.packers.transit :as sente-transit]))
+    ;; Optional, for Transit encoding:
+    [taoensso.sente.packers.transit :as sente-transit]))
 
 ;; (timbre/set-level! :trace) ; Uncomment for more logging
 (reset! sente/debug-mode?_ true) ; Uncomment for extra debug info
 
 ;;;; Define our Sente channel socket (chsk) server
 
-(let [;; Seriaztion format, must use same val for client + server:
+(let [;; Serializtion format, must use same val for client + server:
       packer :edn ; Default packer, a good choice in most cases
       ;; (sente-transit/get-transit-packer) ; Needs Transit dep
 
       chsk-server
       (sente/make-channel-socket-server!
-       (get-sch-adapter) {:packer packer})
+        (get-sch-adapter) {:packer packer})
 
       {:keys [ch-recv send-fn connected-uids
               ajax-post-fn ajax-get-or-ws-handshake-fn]}
@@ -56,15 +57,20 @@
 
 ;; We can watch this atom for changes if we like
 (add-watch connected-uids :connected-uids
-  (fn [_ _ old new]
-    (when (not= old new)
-      (infof "Connected uids change: %s" new))))
+           (fn [_ _ old new]
+             (when (not= old new)
+               (infof "Connected uids change: %s" new))))
 
 ;;;; Ring handlers
 
 (defn landing-pg-handler [ring-req]
   (hiccup/html
     [:h1 "Sente reference example"]
+    (let [csrf-token
+          ;; (:anti-forgery-token ring-req) ; Also an option
+          (force anti-forgery/*anti-forgery-token*)]
+
+      [:div#sente-csrf-token {:data-csrf-token csrf-token}])
     [:p "An Ajax/WebSocket" [:strong " (random choice!)"] " has been configured for this example"]
     [:hr]
     [:p [:strong "Step 1: "] " try hitting the buttons:"]
@@ -91,7 +97,7 @@
     [:hr]
     [:h2 "Step 4: want to re-randomize Ajax/WebSocket connection type?"]
     [:p "Hit your browser's reload/refresh button"]
-    [:script {:src "app.js"}] ; Include our cljs target
+    [:script {:src "main.js"}] ; Include our cljs target
     ))
 
 (defn login-handler
@@ -105,18 +111,21 @@
     {:status 200 :session (assoc session :uid user-id)}))
 
 (defroutes ring-routes
-  (GET  "/"      ring-req (landing-pg-handler            ring-req))
-  (GET  "/chsk"  ring-req (ring-ajax-get-or-ws-handshake ring-req))
-  (POST "/chsk"  ring-req (ring-ajax-post                ring-req))
-  (POST "/login" ring-req (login-handler                 ring-req))
-  (route/resources "/") ; Static files, notably public/main.js (our cljs target)
-  (route/not-found "<h1>Page not found</h1>"))
+           (GET  "/"      ring-req (landing-pg-handler            ring-req))
+           (GET  "/chsk"  ring-req (ring-ajax-get-or-ws-handshake ring-req))
+           (POST "/chsk"  ring-req (ring-ajax-post                ring-req))
+           (POST "/login" ring-req (login-handler                 ring-req))
+           (route/resources "/") ; Static files, notably public/main.js (our cljs target)
+           (route/not-found "<h1>Page not found</h1>"))
 
 (def main-ring-handler
   "**NB**: Sente requires the Ring `wrap-params` + `wrap-keyword-params`
   middleware to work. These are included with
   `ring.middleware.defaults/wrap-defaults` - but you'll need to ensure
-  that they're included yourself if you're not using `wrap-defaults`."
+  that they're included yourself if you're not using `wrap-defaults`.
+
+  You're also STRONGLY recommended to use `ring.middleware.anti-forgery`
+  or something similar."
   (ring.middleware.defaults/wrap-defaults
     ring-routes ring.middleware.defaults/site-defaults))
 
@@ -144,11 +153,11 @@
             (debugf "Broadcasting server>user: %s uids" (count uids))
             (doseq [uid uids]
               (chsk-send! uid
-                [:some/broadcast
-                 {:what-is-this "An async broadcast pushed from server"
-                  :how-often "Every 10 seconds"
-                  :to-whom uid
-                  :i i}]))))]
+                          [:some/broadcast
+                           {:what-is-this "An async broadcast pushed from server"
+                            :how-often "Every 10 seconds"
+                            :to-whom uid
+                            :i i}]))))]
 
     (go-loop [i 0]
       (<! (async/timeout 10000))
@@ -158,9 +167,9 @@
 ;;;; Sente event handlers
 
 (defmulti -event-msg-handler
-  "Multimethod to handle Sente `event-msg`s"
-  :id ; Dispatch on event-id
-  )
+          "Multimethod to handle Sente `event-msg`s"
+          :id ; Dispatch on event-id
+          )
 
 (defn event-msg-handler
   "Wraps `-event-msg-handler` with logging, error catching, etc."
@@ -176,7 +185,7 @@
         uid     (:uid     session)]
     (debugf "Unhandled event: %s" event)
     (when ?reply-fn
-      (?reply-fn {:umatched-event-as-echoed-from-from-server event}))))
+      (?reply-fn {:umatched-event-as-echoed-from-server event}))))
 
 (defmethod -event-msg-handler :example/test-rapid-push
   [ev-msg] (test-fast-server>user-pushes))
@@ -195,8 +204,8 @@
 (defn start-router! []
   (stop-router!)
   (reset! router_
-    (sente/start-server-chsk-router!
-      ch-chsk event-msg-handler)))
+          (sente/start-server-chsk-router!
+            ch-chsk event-msg-handler)))
 
 ;;;; Init stuff
 

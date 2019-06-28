@@ -2,44 +2,48 @@
  :source-paths   #{"src"}
  :resource-paths #{"resources"}
  :dependencies '[
-                 [org.clojure/clojure                       "1.9.0-alpha14"  :scope "provided"]
-                 [org.clojure/core.async                    "0.2.395"]
-                 [org.clojure/clojurescript "1.9.473"]
+                 [org.clojure/clojure                       "1.9.0"  :scope "provided"]
+                 [org.clojure/core.async                    "0.4.490"]
+                 [org.clojure/clojurescript "1.9.562"]
+                 [adzerk/boot-reload        "0.5.1"      :scope "test"]
                  [adzerk/boot-cljs      "2.0.0" :scope "test"]
-                 [adzerk/boot-reload    "0.5.1"      :scope "test"]
-                 [org.clojure/tools.nrepl "0.2.12"]
-                 [com.taoensso/sente        "1.11.0"] ; <--- Sente
-                 [com.taoensso/timbre       "4.7.4"]
+                 [com.taoensso/sente        "1.14.0-RC2"] ; <--- Sente
+                 [com.taoensso/timbre       "4.10.0"]
 
-   ;;; ---> Choose (uncomment) a supported web server <---
-                 [http-kit                  "2.2.0"]
-                 ;; [org.immutant/web       "2.0.0-beta2"]
+                 [http-kit                  "2.3.0"]
 
-                 [ring                      "1.6.1"]
-                 [ring/ring-defaults        "0.3.0"] ; Includes `ring-anti-forgery`, etc.
+                 [ring                      "1.7.1"]
+                 [ring/ring-defaults        "0.3.2"] ; Includes `ring-anti-forgery`, etc.
 
-                 [compojure                 "1.6.0"] ; Or routing lib of your choice
+                 [compojure                 "1.6.1"] ; Or routing lib of your choice
                  [hiccup                    "1.0.5"] ; Optional, just for HTML
 
    ;;; Transit deps optional; may be used to aid perf. of larger data payloads
    ;;; (see reference example for details):
-                 [com.cognitect/transit-clj  "0.8.290"]
-                 [com.cognitect/transit-cljs "0.8.239"]])
+                 [com.cognitect/transit-clj  "0.8.313"]
+                 [com.cognitect/transit-cljs "0.8.256"]
+
+                 [onetom/boot-lein-generate "0.1.3"]])
 
 (require
  '[adzerk.boot-cljs      :refer [cljs]]
  '[adzerk.boot-reload    :refer [reload]]
- 'example.server)
+ 'example.server
+ 'boot.lein)
+
+(deftask generate []
+  (comp
+    (boot.lein/generate)))
 
 (deftask run []
   (with-pass-thru _
     (example.server/-main)))
 
 (deftask dev
-  "Run a restartable system in the Repl"
   []
   (comp
    (watch)
    (cljs :source-map true)
    (reload)
-   (run)))
+   (run)
+   ))
